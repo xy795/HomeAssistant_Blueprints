@@ -130,7 +130,7 @@ actions:
         {{ iif(states("sensor.uptime") != "undefined",
           max((states("sensor.uptime") | as_datetime + timedelta(seconds=boot_timeout) - now()).total_seconds(), 0),
           boot_timeout
-        }}
+        ) }}
 
 # waiting for the window to close again
 - wait_for_trigger:
