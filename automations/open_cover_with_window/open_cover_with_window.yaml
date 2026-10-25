@@ -1,6 +1,7 @@
 blueprint:
   name:   Open cover with window
   domain: automation
+  author: xy795
   description: >
     Link an entity of the 'cover' domain to a binary sensor representing a window or door to automatically open the
     cover while the window is opened.
@@ -93,7 +94,7 @@ actions:
     window: !input       window
     boot_timeout: !input boot_timeout
 - variables:
-    scene_id: !nput scene_id_template
+    scene_id: !input scene_id_template
 - variables:
     scene_entity_id: "scene.{{ scene_id }}"
 
@@ -126,9 +127,10 @@ actions:
   - alias: Wait for all devices to come back online
     delay:
       seconds: >-
-        {{ iif(states("sensor.uptime") != "undefined", 
-        max((states("sensor.uptime") | as_datetime + timedelta(seconds=boot_timeout) - now()).total_seconds(), 0),
-        boot_timeout }}
+        {{ iif(states("sensor.uptime") != "undefined",
+          max((states("sensor.uptime") | as_datetime + timedelta(seconds=boot_timeout) - now()).total_seconds(), 0),
+          boot_timeout
+        }}
 
 # waiting for the window to close again
 - wait_for_trigger:

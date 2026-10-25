@@ -1,6 +1,7 @@
 blueprint:
   name:   Notify Person
   domain: script
+  author: xy795
   description: >
     Helper script to notify a single person. Used to prevent the need of changing every occurrence of a notification
     entity by instead only updating this script in case of a device change. Provides convenience to dismiss messages.

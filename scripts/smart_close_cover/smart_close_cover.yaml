@@ -1,6 +1,7 @@
 blueprint:
   name:   Smart close cover
   domain: script
+  author: xy795
   description: >
     Helper script to intelligently close a cover entity when the sun is below the horizon after waiting for its window
     to be closed. Useful in time-based cover automations.

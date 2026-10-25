@@ -1,6 +1,7 @@
 blueprint:
   name:   Notify People
   domain: script
+  author: xy795
   description: >
     Helper script meant as central place for sending notifications in Home Assistant. Multiple parameters available 
     including selecting notified people, only notifying people at home and a way to dismiss notification.
