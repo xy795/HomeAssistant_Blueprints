@@ -2,7 +2,7 @@
 
 ... and resets it to its previous state when the window is closed again. This Accepts also a door instead of a window.
 
-[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgitea.marquis.site%2FHomeAssistant%2Fblueprints%2Fautomations%2Fopen_cover_with_window%2Fopen_cover_with_window.yaml)
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgitea.marquis.site%2FHomeAssistant%2Fblueprints%2Fraw%2Fbranch%2Fmain%2Fautomations%2Fopen_cover_with_window%2Fopen_cover_with_window.yaml)
 
 ## General
 
