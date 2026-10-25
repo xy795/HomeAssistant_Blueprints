@@ -1,0 +1,161 @@
+blueprint:
+  name:   Notify Person
+  domain: script
+  description: >
+    Helper script to notify a single person. Used to prevent the need of changing every occurrence of a notification
+    entity by instead only updating this script in case of a device change. Provides convenience to dismiss messages.
+  input:
+
+    handler:
+      name: Handler Entity
+      description: >
+        Notification handler for the person.
+      selector:
+        entity:
+          filter:
+            domain: notify
+
+
+### --- Script Fields --- ###
+fields:
+
+  title:
+    name:        Title
+    description: The title of the notification
+    required:    false
+    example:     Notification Title
+    selector:
+      text:
+        multiline: false
+        multiple:  false
+
+  message:
+    name:        Message
+    description: The message of the notification
+    required:    false
+    example:     My notification message.
+    selector:
+      text:
+        multiline: true
+        multiple:  false
+
+  url:
+    name:        URL
+    description: Url for click action target
+    required:    false
+    example:     /lovelace-light/lighting
+    selector:
+      text:
+        type: url
+
+  tag:
+    name:        Tag
+    description: Tag for replacing / clearing later on
+    required:    false
+    example:     my_notification
+    selector:
+      text:
+        multiple:  false
+        multiline: false
+
+  group:
+    name:        Group
+    description: Group name for notification grouping
+    required:    false
+    example:     climate_notification
+    selector:
+      text:
+        multiple:  false
+        multiline: false
+
+  clear:
+    name:        Clear
+    description: Removes notifications with given tag
+    required:    false
+    example:     true
+    selector:
+      boolean:
+
+  channel:
+    name:        Channel
+    description: Android notification Channel
+    required:    false
+    example:     Important Alert
+    selector:
+      text:
+        multiline: false
+        multiple:  false
+
+  actions:
+    name:        Notification actions
+    description: Actions to add to mobile app notifications
+    required:    false
+    example: >
+      [{"action": "URI", "title": "Open Url", "uri": "https://home-assistant.io"}]
+    selector:
+      object:
+        multiple: true
+        fields:
+          action:
+            label:    Action
+            required: true
+            selector:
+              text:
+          title:
+            label:    Title
+            required: true
+            selector:
+              text:
+          uri:
+            label: URL
+            selector:
+              text:
+          behavior:
+            label: Behavior
+            selector:
+              text:
+          authenticationRequired:
+            label: Authentication Required
+            selector:
+              boolean:
+
+
+### --- Script Settings --- ###
+mode: queued
+max:  10
+description: >-
+  Helper script for customizable notifications targeting one person.
+
+
+### --- Global Script Variables --- ###
+variables:
+  handler: !input handler
+  message_title:   "{{ title | default('') }}"
+  message_content: "{{ iif(clear, 'clear_notification', message) }}"
+  extra_data: >-
+    {%- set extra_data = [] %}
+    {%- if tag is defined %}
+      {%- set extra_data = extra_data + [ '"tag": "'~tag~'"' ] %}
+    {%- endif %}
+    {%- if url is defined %}
+      {%- set extra_data = extra_data + [ '"url": "'~url~'"' ] %}
+    {%- endif %}
+    {%- if url is defined %}
+      {%- set extra_data = extra_data + [ '"clickAction": "'~url~'"' ] %}
+    {%- endif %}
+    {%- if group is defined %}
+      {%- set extra_data = extra_data + [ '"group": "'~group~'"' ] %}
+    {%- endif %}
+    {%- if channel is defined %}
+      {%- set extra_data = extra_data + [ '"channel": "'~channel~'"' ] %}
+    {%- endif %}
+    {{ ('{'~extra_data | join(',')~'}') | from_json }}
+
+
+### --- Script Sequence --- ###
+sequence:
+- action: "{{ handler | regex_replace('notify.', 'notify.mobile_app_') }}"
+  data:
+    title:   "{{ message_title }}"
+    message: "{{ message_content }}"
+    data:    "{{ iif(actions is defined, extra_data | combine(dict(actions=actions)), extra_data) }}"

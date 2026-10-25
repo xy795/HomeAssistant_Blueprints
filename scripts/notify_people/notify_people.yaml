@@ -1,0 +1,259 @@
+blueprint:
+  name:   Notify People
+  domain: script
+  description: >
+    Helper script meant as central place for sending notifications in Home Assistant. Multiple parameters available 
+    including selecting notified people, only notifying people at home and a way to dismiss notification.
+  input:
+
+    people:
+      name: People
+      description: >
+        List of People that can be notified. Everyone on this list will be notified per default by this script.
+      selector:
+        entity:
+          multiple: true
+          filter:
+            domain: person
+
+    home:
+      name:    Home Zone
+      description: >
+        Home zone for this Home Assistant Instance.
+      default: zone.home
+      selector:
+        entity:
+          filter:
+            domain: zone
+
+
+### --- Script Fields --- ###
+fields:
+
+  title:
+    name:        Title
+    description: The title of the notification
+    required:    false
+    example:     Notification Title
+    selector:
+      text:
+        multiline: false
+        multiple:  false
+
+  message:
+    name:        Message
+    description: The message of the notification
+    required:    false
+    example:     My notification message.
+    selector:
+      text:
+        multiline: true
+        multiple:  false
+
+  url:
+    name:        URL
+    description: Url for click action target
+    required:    false
+    example:     /lovelace-light/lighting
+    selector:
+      text:
+        type: url
+
+  tag:
+    name:        Tag
+    description: Tag for replacing / clearing later on
+    required:    false
+    example:     my_notification
+    selector:
+      text:
+        multiple:  false
+        multiline: false
+
+  group:
+    name:        Group
+    description: Group name for notification grouping
+    required:    false
+    example:     climate_notification
+    selector:
+      text:
+        multiple:  false
+        multiline: false
+
+  clear:
+    name:        Clear
+    description: Removes notifications with given tag
+    required:    false
+    example:     true
+    selector:
+      boolean:
+
+  channel:
+    name:        Channel
+    description: Android notification Channel
+    required:    false
+    example:     Important Alert
+    selector:
+      text:
+        multiline: false
+        multiple:  false
+
+  actions:
+    name:        Notification actions
+    description: Actions to add to mobile app notifications
+    required:    false
+    example: >
+      [{"action": "URI", "title": "Open Url", "uri": "https://home-assistant.io"}]
+    selector:
+      object:
+        multiple: true
+        fields:
+          action:
+            label:    Action
+            required: true
+            selector:
+              text:
+          title:
+            label:    Title
+            required: true
+            selector:
+              text:
+          uri:
+            label: URL
+            selector:
+              text:
+          behavior:
+            label: Behavior
+            selector:
+              text:
+          authenticationRequired:
+            label: Authentication Required
+            selector:
+              boolean:
+
+  people:
+    name:        People
+    description: People to notify. Defaults to everyone.
+    required:    false
+    default: !input people
+    selector:
+      entity:
+        multiple: true
+        include_entities: !input people
+        filter:
+          domain: person
+
+  only_home:
+    name:        Only Home
+    description: If true, only sends notifications to people who are at home
+    required:    false
+    default:     false
+    example:     true
+    selector:
+      boolean:
+
+  create_persistent_notification:
+    name:        Create persistent Notification
+    description: If true, creates a persistent notification in Home Assistant additionally
+    required:    false
+    default:     false
+    example:     true
+    selector:
+      boolean:
+
+  persistent_notification_condition:
+    name:     Create persistent Notification Condition
+    description: >
+      Creates a persistent notification in Home Assistant only of the given condition matches. Ignored if omitted.
+    required: false
+    selector:
+      template:
+
+
+### --- Script Settings --- ###
+mode:        queued
+max:         10
+description: >-
+  Helper script for customizable notifications. Notification targets can be
+  chosen, defaults to notifying everyone. Option for excluding people not at
+  home.
+
+
+### --- Global Script Variables --- ###
+variables:
+  all_people: !input people
+  home_zone: !input home
+  # clear=(clear | default(false))
+  message_data: >-
+    {%- set message_data = [ '"clear": '~clear | default(false) | to_json ] %}
+    {%- if title is defined %}
+      {%- set message_data = message_data + [ '"title": "'~title~'"' ] %}
+    {%- endif %}
+    {%- if message is defined %}
+      {%- set message_data = message_data + [ '"message": "'~message~'"' ] %}
+    {%- endif %}
+    {%- if tag is defined %}
+      {%- set message_data = message_data + [ '"tag": "'~tag~'"' ] %}
+    {%- endif %}
+    {%- if url is defined %}
+      {%- set message_data = message_data + [ '"url": "'~url~'"' ] %}
+    {%- endif %}
+    {%- if group is defined %}
+      {%- set message_data = message_data + [ '"group": "'~group~'"' ] %}
+    {%- endif %}
+    {%- if channel is defined %}
+      {%- set message_data = message_data + [ '"channel": "'~channel~'"' ] %}
+    {%- endif %}
+    {{ ('{'~message_data | join(',')~'}') | from_json }}
+  clear:                          "{{ clear | default(false) }}"
+  home:                           "{{ only_home | default(false) }}"
+  create_persistent_notification: "{{ create_persistent_notification | default(false) }}"
+  notification_id:                "{{ tag | default(this.context.id) }}"
+  persistent_notification_condition: >
+    {{ persistent_notification_condition | default(true) }}
+
+
+### --- Script Sequence --- ###
+sequence:
+
+- alias: Run for each person
+  repeat:
+    for_each: "{{ people | default(all_people) | map('regex_replace', 'person\\.(.+)', '\\\\1') | list }}"
+    sequence:
+
+    - alias: Test if {{ person }} is at home
+      if:
+      - condition: template
+        value_template: >-
+          {{ not home or (home and 'person.' + repeat.item in state_attr(home_zone, 'persons')) }}
+      then:
+      # Trigger Sub-Scripts in non-blocking (async) mode
+      - action: script.turn_on
+        target:
+          entity_id: script.notify_{{ repeat.item }}
+        data:
+          variables: '{{ iif(actions is defined, message_data | combine(dict(actions=actions)), message_data) }}'
+
+- alias: Persistent Notification
+  if:
+  - condition:      template
+    value_template: '{{ create_persistent_notification }}'
+    alias:          Test if persistent notifications are enabled
+  then:
+  - alias: Test if we are in clearing mode
+    if:
+    - condition:      template
+      value_template: '{{ clear }}'
+    then:
+    - action: persistent_notification.dismiss
+      data:
+        notification_id: '{{ notification_id }}'
+    else:
+    - if:
+      - condition:      template
+        value_template: '{{ persistent_notification_condition }}'
+      then:
+      - action: persistent_notification.create
+        data:
+          title:           "{{ title }}"
+          message:         "{{ message }}"
+          notification_id: "{{ notification_id }}"

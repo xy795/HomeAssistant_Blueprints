@@ -1,0 +1,152 @@
+blueprint:
+  name:   Smart close cover
+  domain: script
+  description: >
+    Helper script to intelligently close a cover entity when the sun is below the horizon after waiting for its window
+    to be closed. Useful in time-based cover automations.
+  input:
+
+    window_close_duration_default:
+      name:    Window close duration default (s)
+      description: >
+        The default duration the window has to be cosed before triggering the cover closing.
+      default: 4
+      selector:
+        number:
+          min:  0
+          step: 1
+
+    window_close_wait_timeout:
+      name:    Window close wait timeout (h)
+      description: >
+        The default duration the window has to be cosed before triggering the cover closing.
+      default: 14
+      selector:
+        number:
+          min:  0
+          step: 1
+
+
+### --- Script Fields --- ###
+fields:
+
+  cover:
+    name:        Cover Entity
+    description: The cover entity to close
+    required:    true
+    selector:
+      entity:
+        filter:
+        - domain: cover
+
+  window:
+    name:        Window Entity
+    description: The window to wait for if open at the time this script is triggered
+    required:    true
+    selector:
+      entity:
+        filter:
+        - domain:       binary_sensor
+          device_class: window
+
+  window_close_duration_seconds:
+    name: Close Duration (s)
+    description: >-
+      The duration in seconds the window needs to be closed before the cover will be reset
+    default: !input window_close_duration_default
+    selector:
+      number:
+        min:  0
+        step: 1
+
+  extra_actions:
+    name: Extra Actions to run when the cover starts closing
+    selector:
+      action: {}
+
+
+### --- Script Settings --- ###
+mode: parallel
+max:  10
+icon: mdi:arrow-down-box
+description: >-
+  Helper script to intelligently close a cover entity after waiting for its window to be closed. Useful in time-based
+  cover automations.
+
+
+### --- Global Script Variables --- ###
+variables:
+  window_close_duration_default: !input window_close_duration_default
+
+
+### --- Script Sequence --- ###
+sequence:
+- if:
+  - condition:      template
+    value_template: "{{ states(window) == 'on' }}"
+  then:
+  - wait_for_trigger:
+    - trigger: template
+      value_template: |
+        {{ states(window) == "off" }}
+      for:
+        seconds: "{{ window_close_duration_seconds | default(window_close_duration_default) | int }}"
+    timeout:
+      hours: !input window_close_wait_timeout
+
+- condition: sun
+  after:     sunset
+  before:    sunrise
+  enabled:   true
+
+- wait_template: |
+    {{ states(cover) != "unavailable" }}
+  continue_on_timeout: false
+
+- action: cover.close_cover
+  target:
+    entity_id:
+    - '{{ cover }}'
+
+- repeat:
+    for_each: '{{ extra_actions }}'
+    sequence:
+    - choose:
+      # 1) Condition
+      - conditions:
+        - condition: template
+          value_template: >-
+            {{ 
+              repeat.item.condition is defined and
+              repeat.item.condition == "template" and
+              repeat.item.value_template is defined
+            }}
+        sequence:
+        - condition:      template
+          value_template: '{{ repeat.item.value_template }}'
+      # 2) Action with target & data
+      - conditions:
+        - condition: template
+          value_template: >-
+            {{ repeat.item.target is defined and repeat.item.data is defined }}
+        sequence:
+        - action: '{{ repeat.item.action }}'
+          target: '{{ repeat.item.target }}'
+          data:   '{{ repeat.item.data }}'
+      # 3) Action with target
+      - conditions:
+        - condition:      template
+          value_template: '{{ repeat.item.target is defined }}'
+        sequence:
+        - action: '{{ repeat.item.action }}'
+          target: '{{ repeat.item.target }}'
+      # 4) Action with data
+      - conditions:
+        - condition:      template
+          value_template: '{{ repeat.item.data is defined }}'
+        sequence:
+        - action: '{{ repeat.item.action }}'
+          data:   '{{ repeat.item.data }}'
+      # 5) Only action
+      default:
+      - action: '{{ repeat.item.action }}'

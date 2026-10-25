@@ -1,0 +1,149 @@
+blueprint:
+  name:   Open cover with window
+  domain: automation
+  description: >
+    Link an entity of the 'cover' domain to a binary sensor representing a window or door to automatically open the
+    cover while the window is opened.
+  input:
+
+    cover:
+      name:        Cover
+      description: The cover entity that should be automated
+      selector:
+        entity:
+          filter:
+            domain: cover
+
+    window:
+      name:        Window/Door
+      description: The window or door state that should control the cover
+      selector:
+        entity:
+          filter:
+            domain: binary_sensor
+            device_class:
+            - window
+            - door
+
+    window_close_duration:
+      name: Close Duration (s)
+      description: >
+        The duration in seconds the window needs to be closed before the cover will be reset to its previous state
+      default: 4
+      selector:
+        number:
+          min:                 0
+          step:                1
+          unit_of_measurement: s
+
+    boot_timeout:
+      name: Boot Timeout (s)
+      description: >
+        The duration in seconds how long to wait after home assistant boots to continue with the automation
+      default: 30
+      selector:
+        number:
+          min:                 0
+          step:                1
+          unit_of_measurement: s
+
+    scene_id_template:
+      name: Scene id value template
+      description: >
+        The template used for creating the scene_id used for saving and restoring the cover position
+      default: "tmp_{{ cover | regex_replace(find='\\.', replace='_') }}"
+      selector:
+        template: {}
+
+
+mode: single
+
+
+trigger:
+- id:               window
+  trigger:          state
+  entity_id: !input window
+  from:
+  - "off"
+  to:
+  - "on"
+- id:      boot
+  trigger: homeassistant
+  event:   start
+
+
+actions:
+# Precheck
+- alias:     Do noting if triggered by window and shutter is fully open
+  condition: or
+  conditions:
+  - condition:        numeric_state
+    entity_id: !input cover
+    attribute:        current_position
+    below:            100
+  - condition: not
+    conditions:
+    - condition: trigger
+      id:
+      - window
+
+# Initialize variables
+- variables:
+    cover: !input        cover
+    window: !input       window
+    boot_timeout: !input boot_timeout
+- variables:
+    scene_id: !nput scene_id_template
+- variables:
+    scene_entity_id: "scene.{{ scene_id }}"
+
+# Startup Phase
+- alias: Test if we're on a normal run or resuming after boot
+  if:
+  - condition: trigger
+    id:
+    - window
+  then:
+  - wait_template: "{{ not(is_state(window, 'closing') or is_state(window, 'opening')) }}"
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: !input cover
+      attribute: current_position
+      state:     100
+  - alias: Create scene
+    action: scene.create
+    data:
+      scene_id: "{{ scene_id }}"
+      snapshot_entities:
+      - !input cover
+  - action: cover.open_cover
+    target:
+      entity_id: !input cover
+  else:
+  - condition:      template
+    value_template: "{{ states(scene_entity_id) != 'undefined' }}"
+  - alias: Wait for all devices to come back online
+    delay:
+      seconds: >-
+        {{ iif(states("sensor.uptime") != "undefined", 
+        max((states("sensor.uptime") | as_datetime + timedelta(seconds=boot_timeout) - now()).total_seconds(), 0),
+        boot_timeout }}
+
+# waiting for the window to close again
+- wait_for_trigger:
+  - trigger: state
+    entity_id:
+    - !input window
+    to:
+    - "off"
+    for:
+      seconds: !input window_close_duration
+
+# Restore & Cleanup
+- action: scene.turn_on
+  target:
+    entity_id: "{{ scene_entity_id }}"
+- action: scene.delete
+  target:
+    entity_id: "{{ scene_entity_id }}"
