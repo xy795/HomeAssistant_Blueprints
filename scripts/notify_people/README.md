@@ -4,7 +4,7 @@ Helper script meant as central place for sending notifications in Home Assistant
 including selecting notified people, only notifying people at home and a way to dismiss notification. Has options for
 handling HA persistent notifications with the same message.
 
-[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgitea.marquis.site%2FHomeAssistant%2Fblueprints%2Fraw%2Fbranch%2Fmain%2Fscripts%2Fnotify_people%2Fnotify_people.yaml)
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fxy795%2FHomeAssistant_Blueprints%2Fblob%2Fmain%2Fscripts%2Fnotify_people%2Fnotify_people.yaml)
 
 ## General
 

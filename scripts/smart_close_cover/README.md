@@ -3,7 +3,7 @@
 Helper script to intelligently close a cover entity when the sun is below the horizon after waiting for its window to be
 closed. Useful in time-based cover automations.
 
-[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgitea.marquis.site%2FHomeAssistant%2Fblueprints%2Fraw%2Fbranch%2Fmain%2Fscripts%2Fsmart_close_cover%2Fsmart_close_cover.yaml)
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fxy795%2FHomeAssistant_Blueprints%2Fblob%2Fmain%2Fscripts%2Fsmart_close_cover%2Fsmart_close_cover.yaml)
 
 ## General
 
