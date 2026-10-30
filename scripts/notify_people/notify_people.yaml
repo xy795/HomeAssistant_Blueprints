@@ -185,26 +185,26 @@ variables:
   home_zone: !input home
   # clear=(clear | default(false))
   message_data: >-
-    {%- set message_data = [ '"clear": '~clear | default(false) | to_json ] %}
+    {%- set message_data = dict(clear=clear|default(false)) %}
     {%- if title is defined %}
-      {%- set message_data = message_data + [ '"title": "'~title~'"' ] %}
+      {%- set message_data = message_data | combine(dict(title=title)) %}
     {%- endif %}
     {%- if message is defined %}
-      {%- set message_data = message_data + [ '"message": "'~message~'"' ] %}
+      {%- set message_data = message_data | combine(dict(message=message)) %}
     {%- endif %}
     {%- if tag is defined %}
-      {%- set message_data = message_data + [ '"tag": "'~tag~'"' ] %}
+      {%- set message_data = message_data | combine(dict(tag=tag)) %}
     {%- endif %}
     {%- if url is defined %}
-      {%- set message_data = message_data + [ '"url": "'~url~'"' ] %}
+      {%- set message_data = message_data | combine(dict(url=url)) %}
     {%- endif %}
     {%- if group is defined %}
-      {%- set message_data = message_data + [ '"group": "'~group~'"' ] %}
+      {%- set message_data = message_data | combine(dict(group=group)) %}
     {%- endif %}
     {%- if channel is defined %}
-      {%- set message_data = message_data + [ '"channel": "'~channel~'"' ] %}
+      {%- set message_data = message_data | combine(dict(channel=channel)) %}
     {%- endif %}
-    {{ ('{'~message_data | join(',')~'}') | from_json }}
+    {{ message_data }}
   clear:                          "{{ clear | default(false) }}"
   home:                           "{{ only_home | default(false) }}"
   create_persistent_notification: "{{ create_persistent_notification | default(false) }}"
