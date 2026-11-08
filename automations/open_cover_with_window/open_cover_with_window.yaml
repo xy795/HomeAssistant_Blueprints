@@ -123,7 +123,7 @@ actions:
       entity_id: !input cover
   else:
   - condition:      template
-    value_template: "{{ states(scene_entity_id) != 'undefined' }}"
+    value_template: "{{ states(scene_entity_id) != 'unknown' }}"
   - alias: Wait for all devices to come back online
     delay:
       seconds: >-
