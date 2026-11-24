@@ -133,14 +133,21 @@ actions:
         ) }}
 
 # waiting for the window to close again
-- wait_for_trigger:
-  - trigger: state
-    entity_id:
-    - !input window
-    to:
-    - "off"
-    for:
-      seconds: !input window_close_duration
+- if:
+    condition: not
+    conditions:
+    - condition: state
+      entity_id: !input window
+      state: 'off'
+    then:
+    - wait_for_trigger:
+      - trigger: state
+        entity_id:
+        - !input window
+        to:
+        - "off"
+        for:
+          seconds: !input window_close_duration
 
 # Restore & Cleanup
 - action: scene.turn_on
