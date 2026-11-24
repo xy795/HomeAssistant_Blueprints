@@ -132,22 +132,22 @@ actions:
           boot_timeout
         ) }}
 
-# waiting for the window to close again
+# waiting for the window to close again if open
 - if:
-    condition: not
+  - condition: not
     conditions:
     - condition: state
       entity_id: !input window
       state: 'off'
-    then:
-    - wait_for_trigger:
-      - trigger: state
-        entity_id:
-        - !input window
-        to:
-        - "off"
-        for:
-          seconds: !input window_close_duration
+  then:
+  - wait_for_trigger:
+    - trigger: state
+      entity_id:
+      - !input window
+      to:
+      - "off"
+      for:
+        seconds: !input window_close_duration
 
 # Restore & Cleanup
 - action: scene.turn_on
